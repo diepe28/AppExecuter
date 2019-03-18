@@ -44,7 +44,7 @@ void printResults(int);
 void executeSettings(Settings*);
 int str_indexOf(char *, char*);
 
-void  step1_executeCommand(char *, char *);
+void  step1_executeCommand(char *, char *, int);
 State step2_classifyOutput(char *, char *);
 void printCurrentState(State);
 

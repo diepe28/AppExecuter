@@ -82,7 +82,7 @@ void executeSettings(Settings* this){
 	for(; i < this->numRuns; i++){
 		char output_log[64];
 	  snprintf(output_log, 64, "%d-%s", i, OUTPUT_FILE_STR);
-    step1_executeCommand(this->command, output_log);
+    step1_executeCommand(this->command, output_log, this->timeoutSeconds);
 		currentState = step2_classifyOutput(output_log, this->correctOutput);
 		printf("Run #%d: ", i);
 		printCurrentState(currentState);
@@ -99,15 +99,14 @@ void freeSettings(Settings * this){
 	free(this);
 }
 
-
-
-void step1_executeCommand(char * command, char * output_log){
+void step1_executeCommand(char * command, char * output_log, int timeoutSeconds){
 	// Appending "> output.txt" to command
 	static char new_buffer[2048];
-  snprintf(new_buffer, 2048, "%s > %s", command, output_log);
+  snprintf(new_buffer, 2048, "timeout %ds %s > %s",
+	 timeoutSeconds, command, output_log);
   //printf("Executing command: %s\n", new_buffer);
-
   int status = system(new_buffer);
+	//printf("Status of command: %d\n", status);
 }
 
 // returns the index of the first occurrence in text of subStr, -1 if not found
