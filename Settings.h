@@ -37,7 +37,7 @@ extern const char* SETTING_CORRECT_RESULT;
 extern int commandOutputStates[5];
 
 // Functions
-Settings* readSettings();
+Settings * readSettings(char *);
 void freeSettings(Settings *);
 void printSettings(Settings *);
 void printResults(int);

@@ -12,7 +12,7 @@ const char* SOFT_ERROR_STR = "SOFT ERROR DETECTED";
 int commandStates[5];
 
 // Other methods
-Settings * readSettings(){
+Settings * readSettings(char * settingsFile){
 	Settings* mySettings = malloc(sizeof(Settings));
 	mySettings->command = (char*) malloc(sizeof(char) * 2048);
 	mySettings->correctOutput = (char*) malloc(sizeof(char) * 128);
@@ -25,9 +25,9 @@ Settings * readSettings(){
 	size_t len = 0;
   ssize_t lineLength;
 
-	inputFile = fopen(INPUT_FILE_STR, "r");
+	inputFile = fopen(settingsFile, "r");
 	if (!inputFile){
-		printf("Could not open file %s",INPUT_FILE_STR);
+		printf("Could not open file %s", settingsFile);
 		return NULL;
 	}
 
