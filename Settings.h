@@ -27,6 +27,7 @@ typedef enum {
 
 // Constants definitions
 #define MAXCHAR 1000
+#define KILLED_BY_TIMEOUT 31744
 extern const char* OUTPUT_FILE_STR;
 extern const char* INPUT_FILE_STR;
 extern const char* RESULT_STR;
@@ -44,7 +45,7 @@ void printResults(int);
 void executeSettings(Settings*);
 int str_indexOf(char *, char*);
 
-void  step1_executeCommand(char *, char *, int);
+int step1_executeCommand(char *, char *, int);
 State step2_classifyOutput(char *, char *);
 void printCurrentState(State);
 

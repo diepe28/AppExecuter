@@ -82,8 +82,13 @@ void executeSettings(Settings* this){
 	for(; i < this->numRuns; i++){
 		char output_log[64];
 	  snprintf(output_log, 64, "%d-%s", i, OUTPUT_FILE_STR);
-    step1_executeCommand(this->command, output_log, this->timeoutSeconds);
-		currentState = step2_classifyOutput(output_log, this->correctOutput);
+
+    if(step1_executeCommand(this->command, output_log, this->timeoutSeconds)){
+			currentState = step2_classifyOutput(output_log, this->correctOutput);
+		}else{
+			currentState = State_Hung;
+		}
+
 		printf("Run #%d: ", i);
 		printCurrentState(currentState);
 		commandStates[currentState]++;
@@ -99,7 +104,8 @@ void freeSettings(Settings * this){
 	free(this);
 }
 
-void step1_executeCommand(char * command, char * output_log, int timeoutSeconds){
+// Returns 1 if the command was not killed by the timeout
+int step1_executeCommand(char * command, char * output_log, int timeoutSeconds){
 	// Appending "> output.txt" to command
 	static char new_buffer[2048];
   snprintf(new_buffer, 2048, "timeout %ds %s > %s",
@@ -107,6 +113,7 @@ void step1_executeCommand(char * command, char * output_log, int timeoutSeconds)
   //printf("Executing command: %s\n", new_buffer);
   int status = system(new_buffer);
 	//printf("Status of command: %d\n", status);
+	return status != KILLED_BY_TIMEOUT;
 }
 
 // returns the index of the first occurrence in text of subStr, -1 if not found
