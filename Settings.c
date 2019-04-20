@@ -42,7 +42,7 @@ Settings * readSettings(char * settingsFile){
   		char* settingName = (char*) malloc(sizeof(char) * index);
 			char* settingValue = (char*) malloc(sizeof(char) * valueLength-1);
 			memcpy(settingName, line, index);
-			memcpy(settingValue, ptr+1, valueLength-1); // -1 to avoid the \n
+			memcpy(settingValue, ptr+1, valueLength-2); // -1 to avoid the ';' and the end of line
 
 			// switch of settings
 			if (strcmp(settingName, SETTING_COMMAND) == 0) {
