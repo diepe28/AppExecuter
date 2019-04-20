@@ -1,7 +1,7 @@
 #include  "Settings.h"
 
 const char* OUTPUT_FILE_STR = "output.log";
-const char* INPUT_FILE_STR = "settings.ini";
+const char* INPUT_FILE_STR = "Settings/settings.ini";
 const char* SETTING_COMMAND = "Command";
 const char* SETTING_NUM_RUNS = "NumRuns";
 const char* SETTING_TIMEOUT = "TimeOut";
@@ -110,9 +110,9 @@ int step1_executeCommand(char * command, char * output_log, int timeoutSeconds){
 	static char new_buffer[2048];
   snprintf(new_buffer, 2048, "timeout %ds %s > %s",
 	 timeoutSeconds, command, output_log);
-  //printf("Executing command: %s\n", new_buffer);
+  printf("Executing command: %s\n", new_buffer);
   int status = system(new_buffer);
-	//printf("Status of command: %d\n", status);
+	printf("Status of command: %d\n", status);
 	return status != KILLED_BY_TIMEOUT;
 }
 
