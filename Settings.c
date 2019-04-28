@@ -4,12 +4,14 @@ const char* OUTPUT_FILE_STR = "output.log";
 const char* INPUT_FILE_STR = "Settings/settings.ini";
 const char* SETTING_COMMAND = "Command";
 const char* SETTING_NUM_RUNS = "NumRuns";
+const char* SETTING_NUM_ITERS = "NumIters";
 const char* SETTING_TIMEOUT = "TimeOut";
 const char* SETTING_CORRECT_RESULT = "CorrectResult";
 //what to search for in output file
 const char* RESULT_STR = "Final result: ";
+const char* ITERATIONS_STR = "Iterations: ";
 const char* SOFT_ERROR_STR = "SOFT ERROR DETECTED";
-int commandStates[5];
+int commandStates[NUM_STATES];
 
 // Other methods
 Settings * readSettings(char * settingsFile){
@@ -22,8 +24,7 @@ Settings * readSettings(char * settingsFile){
 	char str[MAXCHAR];
 	char* line = NULL,
 		*subStr = NULL;
-	size_t len = 0;
-  ssize_t lineLength;
+	size_t len = 0, lineLength;
 
 	inputFile = fopen(settingsFile, "r");
 	if (!inputFile){
@@ -44,7 +45,7 @@ Settings * readSettings(char * settingsFile){
 			memcpy(settingName, line, index);
 			memcpy(settingValue, ptr+1, valueLength-2); // -1 to avoid the ';' and the end of line
 
-			// switch of settings
+			// 'switch' of settings
 			if (strcmp(settingName, SETTING_COMMAND) == 0) {
 			  strcpy(mySettings->command, settingValue);
 			}
@@ -57,6 +58,9 @@ Settings * readSettings(char * settingsFile){
 			else if (strcmp(settingName, SETTING_NUM_RUNS) == 0) {
 				mySettings->numRuns = strtol(settingValue, NULL, 10);
 			}
+			else if (strcmp(settingName, SETTING_NUM_ITERS) == 0) {
+				mySettings->numIters = strtol(settingValue, NULL, 10);
+			}
 
 			free(settingName);
 			free(settingValue);
@@ -66,7 +70,7 @@ Settings * readSettings(char * settingsFile){
 	printSettings(mySettings);
 
 	// init array of output states to 0s
-	for(i < 0; i < 5; i++){
+	for(i < 0; i < NUM_STATES; i++){
 		commandStates[i] = 0;
 	}
 
@@ -84,7 +88,8 @@ void executeSettings(Settings* this){
 	  snprintf(output_log, 64, "%d-%s", i, OUTPUT_FILE_STR);
 
     if(step1_executeCommand(this->command, output_log, this->timeoutSeconds)){
-			currentState = step2_classifyOutput(output_log, this->correctOutput);
+			currentState = step2_classifyOutput(
+				output_log, this->correctOutput, this->numIters);
 		}else{
 			currentState = State_Hung;
 		}
@@ -96,7 +101,6 @@ void executeSettings(Settings* this){
 
 	printResults(this->numRuns);
 }
-
 
 void freeSettings(Settings * this){
 	free(this->command);
@@ -134,12 +138,12 @@ int str_indexOf(char * subStr, char* text){
 	return index;
 }
 
-State step2_classifyOutput(char * outputLog, char * correctOutput){
+State step2_classifyOutput(char * outputLog, char * correctOutput, int correctNumIters){
 	State commandState = State_Correct;
 	FILE *outputFile;
 	char str[MAXCHAR];
-	char* finalLine = NULL, *subStr = NULL, *currentOutput = NULL;
-	int indexOf = 0;
+	char* finalLine = NULL, *subStr = NULL,*currentOutput = NULL;
+	int indexOf = 0, currentIters = 0, resultStrLength, valueLength = -1;
 	size_t len = 0;
   ssize_t lineLength;
 
@@ -150,15 +154,31 @@ State step2_classifyOutput(char * outputLog, char * correctOutput){
 	}
 
 	// read all lines...
-	while ((lineLength = getline(&finalLine, &len, outputFile)) != -1);
+	while ((lineLength = getline(&finalLine, &len, outputFile)) != -1){
+		indexOf = str_indexOf((char*)ITERATIONS_STR, finalLine);
+		// if it contains 'Iterations: '
+		if(indexOf != -1){
+			resultStrLength = strlen(ITERATIONS_STR);
+			valueLength = -1;
+
+			// move the char * after ':', to get the current output
+			subStr = finalLine + indexOf + resultStrLength;
+			valueLength = strlen(subStr) -1;
+			currentOutput = (char*) malloc(sizeof(char) * valueLength);
+			memcpy(currentOutput, subStr, valueLength);
+			currentIters = strtol(currentOutput, NULL, 10);
+			printf("Current num iters: %d\n", currentIters);
+			free(currentOutput);
+		}
+	}
 
 	if (finalLine){
 		// if it contains 'Final result: ' is either correct or corrupted
 		indexOf = str_indexOf((char*)RESULT_STR, finalLine);
 
 		if (indexOf != -1){
-			int resultStrLength = strlen(RESULT_STR);
-			int valueLength = -1;
+			resultStrLength = strlen(RESULT_STR);
+			valueLength = -1;
 
 			// move the char * after ':', to get the current output
 			subStr = finalLine + indexOf + resultStrLength;
@@ -166,10 +186,14 @@ State step2_classifyOutput(char * outputLog, char * correctOutput){
 			currentOutput = (char*) malloc(sizeof(char) * valueLength);
 			memcpy(currentOutput, subStr, valueLength);
 
-			// TODO - maybe define a threshold of flexibility
-
-			commandState = strcmp(currentOutput, correctOutput) == 0 ?
-											State_Correct : State_Corrupted;
+			if (strcmp(currentOutput, correctOutput) == 0){
+				commandState = currentIters == correctNumIters ?
+					State_Correct :
+				 	State_Correct_Extra_Iters;
+			}
+			else{
+				commandState = State_Corrupted;
+			}
 
 		  //printf("Comparison: %s vs %s\n", currentOutput, correctOutput);
 			free(currentOutput);
@@ -195,24 +219,27 @@ void printSettings(Settings * this){
 	printf("Current Settings:\n");
 	printf("  %s: %s\n", SETTING_COMMAND, this->command);
 	printf("  %s: %s\n", SETTING_CORRECT_RESULT, this->correctOutput);
+	printf("  %s: %d\n", SETTING_NUM_ITERS, this->numIters);
 	printf("  %s: %d\n", SETTING_TIMEOUT, this->timeoutSeconds);
 	printf("  %s: %d\n", SETTING_NUM_RUNS, this->numRuns);
 	printf("\n");
 }
 
 void printResults(int numRuns){
-	double corruptedP =  		((double) commandStates[State_Corrupted] / numRuns) * 100;
-	double correctP = 	 		((double) commandStates[State_Correct] / numRuns) * 100;
-	double hungP =  				((double) commandStates[State_Hung] / numRuns) * 100;
-	double S_E_DetectedP =  ((double) commandStates[State_SoftErrorDetected] / numRuns) * 100;
-	double crashedP =  			((double) commandStates[State_Crashed] / numRuns) * 100;
+	double corruptedP =  			((double) commandStates[State_Corrupted] / numRuns) * 100;
+	double correctP = 	 			((double) commandStates[State_Correct] / numRuns) * 100;
+	double hungP =  					((double) commandStates[State_Hung] / numRuns) * 100;
+	double S_E_DetectedP =  	((double) commandStates[State_SoftErrorDetected] / numRuns) * 100;
+	double crashedP =  				((double) commandStates[State_Crashed] / numRuns) * 100;
+	double correct_extra_P =  ((double) commandStates[State_Correct_Extra_Iters] / numRuns) * 100;
 
 	printf("\n-------------- Results --------------\n");
-	printf(" Corrupted:           %d -- %.5f%% \n", commandStates[State_Corrupted], corruptedP);
-	printf(" Correct:             %d -- %.5f%% \n", commandStates[State_Correct], correctP);
-	printf(" Hung:                %d -- %.5f%% \n", commandStates[State_Hung], hungP);
-	printf(" Soft-Error Detected: %d -- %.5f%% \n", commandStates[State_SoftErrorDetected], S_E_DetectedP);
-	printf(" Crashed:             %d -- %.5f%% \n", commandStates[State_Crashed], crashedP);
+	printf(" Corrupted:            %d -- %.5f%% \n", commandStates[State_Corrupted], corruptedP);
+	printf(" Correct:              %d -- %.5f%% \n", commandStates[State_Correct], correctP);
+	printf(" Correct-Extra-Iters:  %d -- %.5f%% \n", commandStates[State_Correct_Extra_Iters], correct_extra_P);
+	printf(" Hung:                 %d -- %.5f%% \n", commandStates[State_Hung], hungP);
+	printf(" Soft-Error Detected:  %d -- %.5f%% \n", commandStates[State_SoftErrorDetected], S_E_DetectedP);
+	printf(" Crashed:              %d -- %.5f%% \n", commandStates[State_Crashed], crashedP);
 	printf("----------------------------------------|\n");
 }
 
@@ -222,6 +249,10 @@ void printCurrentState(State state){
 		case State_Correct:
 			printf("CORRECT");
 			break;
+
+		case State_Correct_Extra_Iters:
+				printf("CORRECT EXTRA ITERS");
+				break;
 
 		case State_Hung:
 			printf("HUNG");
@@ -238,7 +269,6 @@ void printCurrentState(State state){
 		case State_SoftErrorDetected:
 			printf("ERROR DETECTED!");
 			break;
-
 	}
 
 	printf(" \n");
