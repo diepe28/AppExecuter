@@ -67,7 +67,7 @@ errorLevel=''
 if [ "$1" == "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]|| [ "$1" = "3" ]
 then
 	echo All kinds of errors are enabled
-	errorLevel='_allErrors'
+	errorLevel=$1'_MPI_NOPdcDrt_allErrors'
 fi
 
 ### Executables with arithmetic errors and control errors ######################
@@ -76,7 +76,7 @@ then
 	echo Arithmetic and control operations errors are enabled
 	mv config.py ./configAll.py
 	mv configAC.py ./config.py
-	errorLevel='_arithmetic_control'
+	errorLevel=$1'_MPI_NOPdcDrt_arithmetic_control'
 fi
 
 ### Executables with only arithmetic errors #####################################
@@ -85,7 +85,7 @@ then
 	echo Only arithmetic errors are enabled	
 	mv config.py ./configAll.py
 	mv configA.py ./config.py
-	errorLevel='_arithmetic'
+	errorLevel=$1'_MPI_NOPdcDrt_arithmetic'
 fi
 
 make cleanExes && make clean && make Wang && make clean && make WangVG && make clean && make WangJV && make clean
@@ -115,7 +115,7 @@ then
 	cd runNotReplicated/
 	./app-executer ../Settings/settings_NotReplicated.ini > finalOutput.log
 	cd ..
-	folderName=runNotReplicated$errorLevel.tar.gz
+	folderName=$errorLevel'runNotReplicated.tar.gz'
 	tar -czvf $folderName runNotReplicated/
 	sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
 fi    
@@ -132,7 +132,7 @@ then
 	cd runWang/
 	./app-executer ../Settings/settings_Wang.ini > finalOutput.log
 	cd ..
-	folderName=runWang$errorLevel.tar.gz
+	folderName=$errorLevel'runWang.tar.gz'
 	tar -czvf $folderName runWang/
 	sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
 fi    
@@ -149,7 +149,7 @@ then
 	cd runWangVG/
 	./app-executer ../Settings/settings_Wang_VG.ini > finalOutput.log
 	cd ..
-	folderName=runWangVG$errorLevel.tar.gz
+	folderName=$errorLevel'runWangVG.tar.gz'
 	tar -czvf $folderName runWangVG/
 	sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
 fi    
@@ -166,7 +166,7 @@ then
 	cd runWangJV/
 	./app-executer ../Settings/settings_Wang_JV.ini > finalOutput.log
 	cd ..
-	folderName=runWangJV$errorLevel.tar.gz
+	folderName=$errorLevel'runWangJV.tar.gz'
 	tar -czvf $folderName runWangJV/
 	sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
 fi    
