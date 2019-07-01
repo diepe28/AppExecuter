@@ -24,11 +24,17 @@ typedef enum {
 		State_Corrupted,
 		State_Hung,
 		State_SoftErrorDetected,
-		State_Crashed
+		State_Crashed,
+
+    State_Correct_SED,
+    State_Correct_Extra_Iters_SED,
+		State_Corrupted_SED,
+		State_Hung_SED,
+		State_Crashed_SED
 } State;
 
 // Constants definitions
-#define NUM_STATES 6
+#define NUM_STATES 11
 #define MAXCHAR 1000
 #define KILLED_BY_TIMEOUT 31744
 extern const char* OUTPUT_FILE_STR;
@@ -39,7 +45,6 @@ extern const char* SETTING_NUM_RUNS;
 extern const char* SETTING_TIMEOUT;
 extern const char* SETTING_CORRECT_RESULT;
 extern const char* SETTING_NUM_ITERS;
-extern int commandOutputStates[5];
 
 // Functions
 Settings * readSettings(char *);
@@ -50,6 +55,8 @@ void executeSettings(Settings*);
 int str_indexOf(char *, char*);
 
 int step1_executeCommand(char *, char *, int);
+int wasSoftErrorDetected(char *);
+State reclassifyOutput(State, int);
 State step2_classifyOutput(char *, char *, int);
 void printCurrentState(State);
 

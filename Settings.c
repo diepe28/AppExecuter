@@ -91,7 +91,7 @@ void executeSettings(Settings* this){
 			currentState = step2_classifyOutput(
 				output_log, this->correctOutput, this->numIters);
 		}else{
-			currentState = State_Hung;
+			currentState = reclassifyOutput(State_Hung, wasSoftErrorDetected(output_log));
 		}
 
 		printf("Run #%d: ", i);
@@ -125,17 +125,78 @@ int str_indexOf(char * subStr, char* text){
 	int index = -1, i = 0, j = 0,
 	 textLength = strlen(text), subStrLenth = strlen(subStr);
 
-	for(i = 0; i < textLength; i++){
-		if(text[i] == subStr[j]) j++;
-		else j = 0;
+	if(textLength > subStrLenth){
+		for(i = 0; i < textLength; i++){
+			if(text[i] == subStr[j]) j++;
+			else j = 0;
 
-		if(j == subStrLenth){
-			index = (i - j) + 1;
+			if(j == subStrLenth){
+				index = (i - j) + 1;
+				break;
+			}
+		}
+	}
+
+	//printf("Index: %d, %s in %s\n", index, subStr, text);
+
+	return index;
+}
+
+int wasSoftErrorDetected(char * outputLog){
+	int result = 0, indexOf = 0;
+	FILE *outputFile;
+	char* finalLine = NULL;
+	size_t len = 0;
+  ssize_t lineLength;
+
+	outputFile = fopen(outputLog, "r");
+  // If the file does not exist is because the command did not finished
+	if (outputFile == NULL){
+	  return 0;
+	}
+
+	// read all lines...
+	while ((lineLength = getline(&finalLine, &len, outputFile)) != -1){
+		// if it contains 'SOFT ERROR DETECTED: '
+		indexOf = str_indexOf((char*)SOFT_ERROR_STR, finalLine);
+		if(indexOf != -1){
+			result = 1;
 			break;
 		}
 	}
 
-	return index;
+	if (result == 0 && finalLine){
+		// if it contains 'SOFT ERROR DETECTED: '
+		indexOf = str_indexOf((char*)SOFT_ERROR_STR, finalLine);
+		if (indexOf != -1)
+			result = 1;
+	}
+
+	fclose(outputFile);
+	return result;
+}
+
+State reclassifyOutput(State state, int sofErrorDetected){
+	if(sofErrorDetected){
+		switch (state) {
+			case State_Correct:
+				return State_Correct_SED;
+
+			case State_Correct_Extra_Iters:
+				return State_Correct_Extra_Iters_SED;
+
+			case State_Hung:
+				return State_Hung_SED;
+
+			case State_Crashed:
+				return State_Crashed_SED;
+
+			case State_Corrupted:
+				return State_Corrupted_SED;
+			}
+		}
+
+		return state;
 }
 
 State step2_classifyOutput(char * outputLog, char * correctOutput, int correctNumIters){
@@ -143,7 +204,7 @@ State step2_classifyOutput(char * outputLog, char * correctOutput, int correctNu
 	FILE *outputFile;
 	char str[MAXCHAR];
 	char* finalLine = NULL, *subStr = NULL,*currentOutput = NULL;
-	int indexOf = 0, currentIters = 0, resultStrLength, valueLength = -1;
+	int indexOf = 0, currentIters = 0, resultStrLength, valueLength = -1, sofErrorDetected = 0;
 	size_t len = 0;
   ssize_t lineLength;
 
@@ -212,7 +273,8 @@ State step2_classifyOutput(char * outputLog, char * correctOutput, int correctNu
 	}
 
 	fclose(outputFile);
-	return commandState;
+
+	return reclassifyOutput(commandState, wasSoftErrorDetected(outputLog));
 }
 
 void printSettings(Settings * this){
@@ -232,6 +294,12 @@ void printResults(int numRuns){
 	double S_E_DetectedP =  	((double) commandStates[State_SoftErrorDetected] / numRuns) * 100;
 	double crashedP =  				((double) commandStates[State_Crashed] / numRuns) * 100;
 	double correct_extra_P =  ((double) commandStates[State_Correct_Extra_Iters] / numRuns) * 100;
+	// new states with SED
+	double corrupted_SED_P =  			((double) commandStates[State_Corrupted_SED] / numRuns) * 100;
+	double correct_SED_P = 	 			  ((double) commandStates[State_Correct_SED] / numRuns) * 100;
+	double hung_SED_P =  					  ((double) commandStates[State_Hung_SED] / numRuns) * 100;
+	double crashed_SED_P =  				((double) commandStates[State_Crashed_SED] / numRuns) * 100;
+	double correct_extra_SED_P =   ((double) commandStates[State_Correct_Extra_Iters_SED] / numRuns) * 100;
 
 	printf("\n-------------- Results --------------\n");
 	printf(" Corrupted:            %d -- %.5f%% \n", commandStates[State_Corrupted], corruptedP);
@@ -240,6 +308,11 @@ void printResults(int numRuns){
 	printf(" Hung:                 %d -- %.5f%% \n", commandStates[State_Hung], hungP);
 	printf(" Soft-Error Detected:  %d -- %.5f%% \n", commandStates[State_SoftErrorDetected], S_E_DetectedP);
 	printf(" Crashed:              %d -- %.5f%% \n", commandStates[State_Crashed], crashedP);
+	printf(" Corrupted_SED:            %d -- %.5f%% \n", commandStates[State_Corrupted_SED], corrupted_SED_P);
+	printf(" Correct_SED:              %d -- %.5f%% \n", commandStates[State_Correct_SED], correct_SED_P);
+	printf(" Correct-Extra-Iters_SED:  %d -- %.5f%% \n", commandStates[State_Correct_Extra_Iters_SED], correct_extra_SED_P);
+	printf(" Hung_SED:                 %d -- %.5f%% \n", commandStates[State_Hung_SED], hung_SED_P);
+	printf(" Crashed_SED:              %d -- %.5f%% \n", commandStates[State_Crashed_SED], crashed_SED_P);
 	printf("----------------------------------------|\n");
 }
 
@@ -269,7 +342,27 @@ void printCurrentState(State state){
 		case State_SoftErrorDetected:
 			printf("ERROR DETECTED!");
 			break;
-	}
 
+		// NEW STATES WITH SE DETECTED
+		case State_Correct_SED:
+			printf("CORRECT BUT SE DETECTED");
+			break;
+
+		case State_Correct_Extra_Iters_SED:
+			printf("CORRECT EXTRA ITERS BUT SE DETECTED");
+			break;
+
+		case State_Hung_SED:
+			printf("HUNG BUT SE DETECTED");
+			break;
+
+		case State_Crashed_SED:
+			printf("CRASHED BUT SE DETECTED");
+			break;
+
+		case State_Corrupted_SED:
+			printf("CORRUPTED! BUT SE DETECTED");
+			break;
+	}
 	printf(" \n");
 }
