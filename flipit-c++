@@ -1,0 +1,172 @@
+#!/usr/bin/python
+#####################################################################
+#
+# This file is licensed under the University of Illinois/NCSA Open 
+# Source License. See LICENSE.TXT for details.
+#
+#####################################################################
+
+#####################################################################
+#
+# Name: flipit-cc
+#
+# Description: Wrapper script to hide the process of compilation for 
+#       fault injection. Use it like you would a regular 
+#       compiler.
+#
+#        1.) Compile source code to LLVM IR
+#        2.) Link other LLVM IR files needed for compilation
+#        3.) Run the compiler pass on this linked IR to instrment code
+#            - generate a log file that can be used to relate fault injection
+#              locations to source lines
+#        4.) Compile the transformed IR into object code
+#
+#####################################################################
+import sys
+import os
+import glob
+
+# If there is a flipit-cc config file in the current 
+# directory, use that if not use the one in the flipit directory
+if os.path.isfile("config.py"):
+    sys.path.insert(0, os.getcwd())
+from config import *
+
+argc = len(sys.argv)
+
+
+def shouldInject(argv, notInject):
+    for i in notInject:
+        if i in argv:
+            return False
+
+    if "-V" in argv or "--version" in argv:
+        return False
+    if "-c" not in argv:
+        return False
+    return True
+
+def addFlipItLinkage(cmd):
+    if " -c " not in cmd:
+        if histogram == False:
+            cmd += " -L" + FLIPIT_PATH + "/lib -lcorrupt "
+        else:
+            cmd += " -L" + FLIPIT_PATH + "/lib -lcorrupt_histo "
+    return cmd
+
+def removeLinking(flags):
+    noLinker = " "
+    for i in flags.split(" "):
+        if i[0:2] == "-L" or i[0:2] =="-l" or i[0:2] == "-Z":
+            continue
+        else:
+            noLinker += i + " "
+    #print "LINKING: ", noLinker
+    return noLinker
+
+def setConfig(argv):
+    configs = glob.glob('*.config')
+    if len(configs) > 0:
+        config = configs[0]
+
+if (shouldInject(sys.argv, notInject)):
+
+    setConfig(sys.argv)
+
+    step1 = LLVM_BUILD_PATH + "/bin/clang++ -fPIC -emit-llvm -I" + FLIPIT_PATH + "/include "
+    step2 = LLVM_BUILD_PATH + "/bin/llvm-link " + FLIPIT_PATH +"/include/FlipIt/corrupt/corrupt.bc "
+    step3 = LLVM_BUILD_PATH + "/bin/opt -load "+ FLIPIT_PATH + "/lib/libFlipItPass.so -FlipIt " \
+        + " -config " + config \
+        + " -prob " + str(prob) \
+        + " -byte " + str(byte) \
+        + " -bit " + str(bit) \
+        + " -ptr " + str(ptr) \
+        + " -ctrl " + str(ctrl) \
+        + " -arith " + str(arith) \
+        + " -funcList " + funcList \
+        + " -stateFile " + stateFile
+    step4 = LLVM_BUILD_PATH + "/bin/clang++ " 
+    fileName = ""
+    fileNameBC = ""
+    fileObj = ""
+
+
+    #loop over argv and assign values as needed
+    i = 1
+    while i < argc: #sys.argv:
+        arg = sys.argv[i]
+        if arg == "-O2" or arg == "-O3" or arg =="-O5":
+            arg = "-g -O2 "#-emit-llvm "
+            #step4 += "-01 "
+        elif ".c" in arg:
+            fileName = arg#[0:-2]# grab file name and path
+        elif "-o" == arg:
+            step1 += arg + " "
+            arg = sys.argv[i+1]
+            fileObj = arg
+            fileNameBC = arg[0:-2] + ".bc" #modify to generate .bc
+            arg = fileNameBC
+            i += 1
+        #append
+        step1 += arg + " "
+        i += 1
+
+    if SHOW != "":
+        step1 += removeLinking(SHOW)
+    #make sure the bitcode file name is set
+    if fileNameBC == "":
+        fileNameBC = fileName[0:fileName.rfind(".")] + ".bc"
+    path = fileName[0:fileNameBC.rfind("/")]
+
+    #grab the path the the file we are compiling to place the object file in the correct location
+    pos = fileObj.rfind("/", 0, len(fileObj))
+    filePath = "./"
+    if pos != -1:
+        filePath += fileObj[0:pos] + "/"
+
+    #build commands to launch
+    step2 +=  fileNameBC + " -o " + fileName + ".crpt.bc"
+    #step2 +=  fileNameBC + " " + filePath + "corrupt.bc" + " -o " + fileName + ".crpt.bc"
+    step3 += " < " + fileName + ".crpt.bc > " + fileName + ".final.bc 2> " + fileName + ".LLVM.txt"
+    step3 += " -srcFile " + fileName + " " + fileName + ".crpt.bc -o " + fileName + ".final.bc " "2> " + fileName + ".LLVM.txt"
+    step4 += "-O2 -fPIC -c " + fileName + ".final.bc  -o "
+
+    #name the object file what a normal compiler would name it
+    if fileObj == "":
+        step4 += fileName[0:fileObj.rfind(".")-1] + ".o"
+    else:
+        step4 += fileObj
+
+    #remove temporary files
+    if os.path.isfile(fileNameBC):
+        os.system("rm " + fileNameBC)
+    if os.path.isfile(fileName + ".crpt.bc"):
+        os.system("rm " + fileName + ".crpt.bc")
+    if os.path.isfile(fileName + ".final.bc"):
+        os.system("rm " + fileName + ".final.bc")
+
+
+    #check if we need to compile based on modified times
+    if not (os.path.isfile(fileObj) and\
+            (os.path.getmtime(fileObj) > os.path.getmtime(fileName))):
+        if verbose == True:
+            print "\n\n========== Compiling file: ", fileName, " ==========\n\n", step1
+        os.system(step1)
+        if verbose == True:
+            print step2
+        os.system(step2)
+        if verbose == True:
+            print step3
+        os.system(step3)
+        if verbose == True:
+            print step4
+        os.system(step4)
+else:
+    if "-V" in sys.argv or "--version" in sys.argv:
+        print "FlipIt Compiler wrapper around:\n"
+        os.system(LLVM_BUILD_PATH + "/bin/clang++ --version")
+    else: 
+        sys.argv[0] = cc + " -I" + FLIPIT_PATH + "/include "
+        sys.argv[-1] += CPP_LIB 
+        print addFlipItLinkage(' '.join(sys.argv))
+        os.system( addFlipItLinkage(' '.join(sys.argv)) )
