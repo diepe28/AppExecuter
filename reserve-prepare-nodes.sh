@@ -7,15 +7,19 @@
 #ssh dperez@access.grid5000.fr
 
 #This must be executed before calling the executable
-#myCluster='parasilo' #rennes
+myCluster='paravance' #rennes
 #myCluster='suno' #sophia
-#myCluster='chifflet' #lille
-myCluster='ecotype' #nantes
+#myCluster='chiclet' #lille
+#myCluster='ecotype' #nantes
+#myCluster='grisou' #nancy
 numNodes=12
+#oardel 168442 #to delete a job
 #oarsub -I -t deploy -l {"cluster='$myCluster'"}/nodes=1,walltime=1
-#oarsub -r "2019-05-01 03:23:00" -t deploy -l {"cluster='$myCluster'"}/nodes=$numNodes,walltime=6:00
+#oarsub -I -l {"cluster='suno'"}/nodes=1,walltime=1
+#oarsub -r "2019-07-02 19:00:00" -t deploy -l {"cluster='$myCluster'"}/nodes=$numNodes,walltime=13:50
 
-#oarsub -C 158381
+#oarwalltime 165128 +0:30 
+#oarsub -C 165128
 
 #Deploy my image to all your nodes (as root)
 echo Deploying image to all nodes
@@ -43,41 +47,13 @@ done
 #ssh root@${myNodes[0]}
 #oarstat #all jobs active
 
-#9am - 7pm
 #7pm - 9am (no limit, best to do in this interval)
 
 echo Done ordering script execution
 exit
 
-# Extracting everything to proper folder names
-tar xf runNotReplicated_allErrors.tar.gz
-mv runNotReplicated/ 1-NR_all/
-tar xf runNotReplicated_arithmetic.tar.gz 
-mv runNotReplicated/ 1-NR_arith/
-tar xf runNotReplicated_arithmetic_control.tar.gz
-mv runNotReplicated/ 1-NR_control_arith/
-
-tar xf runWang_allErrors.tar.gz
-mv runWang/ 2-wang_all/
-tar xf runWang_arithmetic.tar.gz
-mv runWang/ 2-wang_arith/
-tar xf runWang_arithmetic_control.tar.gz
-mv runWang/ 2-wang_control_arith/
-
-tar xf runWangVG_allErrors.tar.gz
-mv runWangVG/ 3-VG_all/
-tar xf runWangVG_arithmetic.tar.gz
-mv runWangVG/ 3-VG_arith/
-tar xf runWangVG_arithmetic_control.tar.gz
-mv runWangVG/ 3-VG_control_arith/
-
-tar xf runWangJV_allErrors.tar.gz
-mv runWangJV/ 4-JV_all/
-tar xf runWangJV_arithmetic_control.tar.gz
-mv runWangJV/ 4-JV_arith/
-tar xf runWangJV_arithmetic.tar.gz
-mv runWangJV/ 4-JV_control_arith/
-
+# These are just helpful commands to have, but they are not executed because of the recent "exit" command
+# Renaming everything to proper folder names
 mv runNotReplicated_allErrors.tar.gz 0-runNotReplicated_allErrors.tar.gz 
 mv runNotReplicated_arithmetic_control.tar.gz 1-runNotReplicated_arithmetic_control.tar.gz
 mv runNotReplicated_arithmetic.tar.gz 2-runNotReplicated_arithmetic.tar.gz 
@@ -94,35 +70,31 @@ mv runWangJV_allErrors.tar.gz 9-runWangJV_allErrors.tar.gz
 mv runWangJV_arithmetic_control.tar.gz 10-runWangJV_arithmetic_control.tar.gz
 mv runWangJV_arithmetic.tar.gz 11-runWangJV_arithmetic.tar.gz
 
+# Compressing into a single tar.gz
+tar -czvf reliability-results.tar.gz *-run*.tar.gz
 
-tar xf 0-runNotReplicated_allErrors.tar.gz 
+# Executed from my machine
+#scp dperez@access.grid5000.fr:nantes/public/workspace/reliability-results.tar.gz ./
+#scp -r dperez@access.grid5000.fr:nantes/public/workspace/someDir ./
+tar xf reliability-results.tar.gz 
+
+# Extracting and preparing to copy to excel file
+
 cp 0-runNotReplicated_allErrors/runNotReplicated/finalOutput.log 0-runNotReplicated_allErrors/
-tar xf 1-runNotReplicated_arithmetic_control.tar.gz
 cp 1-runNotReplicated_arithmetic_control/runNotReplicated/finalOutput.log 1-runNotReplicated_arithmetic_control/
-tar xf 2-runNotReplicated_arithmetic.tar.gz 
 cp 2-runNotReplicated_arithmetic/runNotReplicated/finalOutput.log 2-runNotReplicated_arithmetic/
 
-tar xf 3-runWang_allErrors.tar.gz
 cp 3-runWang_allErrors/runWang/finalOutput.log 3-runWang_allErrors/
-tar xf 4-runWang_arithmetic_control.tar.gz
 cp 4-runWang_arithmetic_control/runWang/finalOutput.log 4-runWang_arithmetic_control/
-tar xf 5-runWang_arithmetic.tar.gz
 cp 5-runWang_arithmetic/runWang/finalOutput.log 5-runWang_arithmetic/
 
-tar xf 6-runWangVG_allErrors.tar.gz
 cp 6-runWangVG_allErrors/runWangVG/finalOutput.log 6-runWangVG_allErrors/
-tar xf 7-runWangVG_arithmetic_control.tar.gz
 cp 7-runWangVG_arithmetic_control/runWangVG/finalOutput.log 7-runWangVG_arithmetic_control/
-tar xf 8-runWangVG_arithmetic.tar.gz
 cp 8-runWangVG_arithmetic/runWangVG/finalOutput.log 8-runWangVG_arithmetic/
 
-tar xf 9-runWangJV_allErrors.tar.gz
 cp 9-runWangJV_allErrors/runWangJV/finalOutput.log 9-runWangJV_allErrors/
-tar xf 10-runWangJV_arithmetic_control.tar.gz
 cp 10-runWangJV_arithmetic_control/runWangJV/finalOutput.log 10-runWangJV_arithmetic_control/
-tar xf 11-runWangJV_arithmetic.tar.gz
 cp 11-runWangJV_arithmetic/runWangJV/finalOutput.log 11-runWangJV_arithmetic/
 
-tar -czvf 008.tar.gz 8-*
 
 

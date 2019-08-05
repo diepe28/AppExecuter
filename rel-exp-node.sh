@@ -49,8 +49,6 @@ fi
 
 # Uncompress the tar.gz files
 echo Uncompressing repositories files
-rm HPCCG-RHT-Clean/ -rf
-rm App-Executer-Clean/ -rf
 tar xf App-Executer-Clean.tar.gz
 tar xf HPCCG-RHT-Clean.tar.gz
 
@@ -88,11 +86,28 @@ then
 	errorLevel=$1'_MPI_NOPdcDrt_arithmetic'
 fi
 
-make cleanExes && make clean && make Wang && make clean && make WangVG && make clean && make WangJV && make clean
-	
+make cleanBinaries 
+# Make wang executable and its log
+make clean && make Wang && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin
+mv ddot.cpp.LLVM.txt log-$errorLevel-ddot-Wang.log
+ 
+# Make wang var grouping executable and its log
+make clean && make WangVG && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin
+mv ddot.cpp.LLVM.txt log-$errorLevel-ddot-WangVG.log
+
+# Make wang just volatiles executable and its log
+make clean && make WangJV && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin
+mv ddot.cpp.LLVM.txt log-$errorLevel-ddot-WangJV.log
+
+# Moving HPCCG executables and logfiles to app-executer folder
 cp Wang ../App-Executer-Clean/Wang
+cp log-$errorLevel-ddot-Wang.log ../App-Executer-Clean/log-$errorLevel-ddot-Wang.log
+
 cp WangVG ../App-Executer-Clean/WangVG
+cp log-$errorLevel-ddot-WangVG.log ../App-Executer-Clean/log-$errorLevel-ddot-WangVG.log
+
 cp WangJV ../App-Executer-Clean/WangJV
+cp log-$errorLevel-ddot-WangJV.log ../App-Executer-Clean/log-$errorLevel-ddot-WangJV.log
 
 # Make app executable and all subfolders
 echo Making app executable and all subfolders
@@ -125,6 +140,9 @@ if [ "$1" == "1" ] || [ "$1" = "5" ] || [ "$1" = "9" ]
 then
 	mkdir runWang
 	cp Wang runWang/
+	cp log-$errorLevel-ddot-Wang.log runWang/
+	cp log-$errorLevel-ddot-WangVG.log runWang/
+	cp log-$errorLevel-ddot-WangJV.log runWang/
 	cp app-executer runWang/
 
 	# Run Wang approach, and copy output to frontend
@@ -142,6 +160,9 @@ if [ "$1" == "2" ] || [ "$1" = "6" ] || [ "$1" = "10" ]
 then
 	mkdir runWangVG
 	cp WangVG runWangVG/
+	cp log-$errorLevel-ddot-Wang.log runWangVG/
+	cp log-$errorLevel-ddot-WangVG.log runWangVG/
+	cp log-$errorLevel-ddot-WangJV.log runWangVG/
 	cp app-executer runWangVG/
 
 	# Run Wang Var Grouping approach, and copy output to frontend
@@ -159,6 +180,9 @@ if [ "$1" == "3" ] || [ "$1" = "7" ] || [ "$1" = "11" ]
 then
 	mkdir runWangJV
 	cp WangJV runWangJV/
+	cp log-$errorLevel-ddot-Wang.log runWangJV/
+	cp log-$errorLevel-ddot-WangVG.log runWangJV/
+	cp log-$errorLevel-ddot-WangJV.log runWangJV/
 	cp app-executer runWangJV/
 
 	# Run Wang Just Volatiles approach, and copy output to frontend

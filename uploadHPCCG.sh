@@ -64,14 +64,20 @@ else
     echo "Copying files to Nantes..."
     scp $newFolder.tar.gz $cluster:nantes/public/workspace
     
+    echo "Copying files to Nancy..."
+    scp $newFolder.tar.gz $cluster:nancy/public/workspace
+    
     #echo "Copying files to Lyon..."
     #scp $newFolder.tar.gz $cluster:lyon/public/workspace
     
-    echo "Copying files to Rennes..."
-    scp $newFolder.tar.gz $cluster:rennes/public/workspace
+    #echo "Copying files to Rennes..."
+    #scp $newFolder.tar.gz $cluster:rennes/public/workspace
     
-    echo "Copying files to Sophia..."
-    scp $newFolder.tar.gz $cluster:sophia/public/workspace
+    #echo "Copying files to Sophia..."
+    #scp $newFolder.tar.gz $cluster:sophia/public/workspace
+    
+    #echo "Copying files to Lille..."
+    #scp $newFolder.tar.gz $cluster:lille/public/workspace
     
     echo "Files copied to Grid5K Storage"
 fi    

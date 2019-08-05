@@ -48,20 +48,30 @@ else
     #scp reserve-prepare-nodes.sh $cluster:lyon/public/workspace
     #scp rel-exp-node.sh $cluster:lyon/public/workspace
     
-    echo "Copying files to Rennes..."
-    scp $newFolder.tar.gz $cluster:rennes/public/workspace
-    scp reserve-prepare-nodes.sh $cluster:rennes/public/workspace
-    scp rel-exp-node.sh $cluster:rennes/public/workspace
+    #echo "Copying files to Rennes..."
+    #scp $newFolder.tar.gz $cluster:rennes/public/workspace
+    #scp reserve-prepare-nodes.sh $cluster:rennes/public/workspace
+    #scp rel-exp-node.sh $cluster:rennes/public/workspace
     
-    echo "Copying files to Sophia..."
-    scp $newFolder.tar.gz $cluster:sophia/public/workspace
-    scp reserve-prepare-nodes.sh $cluster:sophia/public/workspace
-    scp rel-exp-node.sh $cluster:sophia/public/workspace
+    #echo "Copying files to Sophia..."
+    #scp $newFolder.tar.gz $cluster:sophia/public/workspace
+    #scp reserve-prepare-nodes.sh $cluster:sophia/public/workspace
+    #scp rel-exp-node.sh $cluster:sophia/public/workspace
     
     echo "Copying files to Nantes..."
     scp $newFolder.tar.gz $cluster:nantes/public/workspace
     scp reserve-prepare-nodes.sh $cluster:nantes/public/workspace
     scp rel-exp-node.sh $cluster:nantes/public/workspace
+    
+    echo "Copying files to Nancy..."
+    scp $newFolder.tar.gz $cluster:nancy/public/workspace
+    scp reserve-prepare-nodes.sh $cluster:nancy/public/workspace
+    scp rel-exp-node.sh $cluster:nancy/public/workspace
+    
+    #echo "Copying files to Lille..."
+    #scp $newFolder.tar.gz $cluster:lille/public/workspace
+    #scp reserve-prepare-nodes.sh $cluster:lille/public/workspace
+    #scp rel-exp-node.sh $cluster:lille/public/workspace
     
     echo "Files copied to Grid5K Storage"
 fi    
