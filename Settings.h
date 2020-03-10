@@ -38,6 +38,7 @@ typedef enum {
 #define MAXCHAR 1000
 #define KILLED_BY_TIMEOUT 31744
 extern const char* OUTPUT_FILE_STR;
+extern char APP_GOT_HUNG_STR[];
 extern const char* INPUT_FILE_STR;
 extern const char* RESULT_STR;
 extern const char* SETTING_COMMAND;

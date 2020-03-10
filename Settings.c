@@ -1,6 +1,7 @@
 #include  "Settings.h"
 
-const char* OUTPUT_FILE_STR = "output.log";
+const char* OUTPUT_FILE_STR = "Output";
+char APP_GOT_HUNG_STR[]= "Application got stuck!";
 const char* INPUT_FILE_STR = "Settings/settings.ini";
 const char* SETTING_COMMAND = "Command";
 const char* SETTING_NUM_RUNS = "NumRuns";
@@ -85,13 +86,22 @@ void executeSettings(Settings* this){
 
 	for(; i < this->numRuns; i++){
 		char output_log[64];
-	  snprintf(output_log, 64, "%d-%s", i, OUTPUT_FILE_STR);
+	  snprintf(output_log, 64, "%s_%d.txt", OUTPUT_FILE_STR, i);
 
     if(step1_executeCommand(this->command, output_log, this->timeoutSeconds)){
 			currentState = step2_classifyOutput(
 				output_log, this->correctOutput, this->numIters);
 		}else{
 			currentState = reclassifyOutput(State_Hung, wasSoftErrorDetected(output_log));
+			FILE* pFile = fopen(output_log, "a");
+			if(pFile==NULL) {
+    		perror("Error appending hung message to log.");
+			}else{
+				// Printing APP_GOT_HUNG_STR to output log
+				while(fgets(APP_GOT_HUNG_STR, sizeof(APP_GOT_HUNG_STR), pFile)) {
+        	fprintf(pFile, "%s", APP_GOT_HUNG_STR);
+    		}
+			}
 		}
 
 		printf("Run #%d: ", i);
