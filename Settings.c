@@ -98,9 +98,8 @@ void executeSettings(Settings* this){
     		perror("Error appending hung message to log.");
 			}else{
 				// Printing APP_GOT_HUNG_STR to output log
-				while(fgets(APP_GOT_HUNG_STR, sizeof(APP_GOT_HUNG_STR), pFile)) {
-        	fprintf(pFile, "%s", APP_GOT_HUNG_STR);
-    		}
+        fprintf(pFile, "%s", APP_GOT_HUNG_STR);
+				fclose(pFile);
 			}
 		}
 
