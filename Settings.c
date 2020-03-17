@@ -2,6 +2,7 @@
 
 const char* OUTPUT_FILE_STR = "Output";
 char APP_GOT_HUNG_STR[]= "Application got stuck!";
+char APP_GOT_CORRUPTED_STR[]= "Corrupted execution!";
 const char* INPUT_FILE_STR = "Settings/settings.ini";
 const char* SETTING_COMMAND = "Command";
 const char* SETTING_NUM_RUNS = "NumRuns";
@@ -263,6 +264,14 @@ State step2_classifyOutput(char * outputLog, char * correctOutput, int correctNu
 			}
 			else{
 				commandState = State_Corrupted;
+				FILE* pFile = fopen(outputLog, "a");
+				if(pFile==NULL) {
+	    		perror("Error appending Corrupted message to log.");
+				}else{
+					// Printing APP_GOT_CORRUPTED_STR to output log
+	        fprintf(pFile, "%s", APP_GOT_CORRUPTED_STR);
+					fclose(pFile);
+				}
 			}
 
 		  //printf("Comparison: %s vs %s\n", currentOutput, correctOutput);
