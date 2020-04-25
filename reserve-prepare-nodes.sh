@@ -7,19 +7,19 @@
 #ssh dperez@access.grid5000.fr
 
 #This must be executed before calling the executable
-myCluster='paravance' #rennes
+#myCluster='paravance' #rennes
 #myCluster='suno' #sophia
 #myCluster='chiclet' #lille
-#myCluster='ecotype' #nantes
+myCluster='ecotype' #nantes
 #myCluster='grisou' #nancy
 numNodes=12
 #oardel 168442 #to delete a job
 #oarsub -I -t deploy -l {"cluster='$myCluster'"}/nodes=1,walltime=1
 #oarsub -I -l {"cluster='suno'"}/nodes=1,walltime=1
-#oarsub -r "2019-07-02 19:00:00" -t deploy -l {"cluster='$myCluster'"}/nodes=$numNodes,walltime=13:50
+#oarsub -r "2019-08-05 19:00:00" -t deploy -l {"cluster='$myCluster'"}/nodes=$numNodes,walltime=12:00
 
-#oarwalltime 165128 +0:30 
-#oarsub -C 165128
+#oarwalltime 168460 +0:30 
+#oarsub -C 168460
 
 #Deploy my image to all your nodes (as root)
 echo Deploying image to all nodes

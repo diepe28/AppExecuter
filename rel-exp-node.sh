@@ -23,6 +23,8 @@ cd /home/diego/workspace
 echo Located at
 pwd
 
+skipExecution=false
+
 ### Running not replicated HPCCG ######################################
 if [ "$1" == "0" ] || [ "$1" = "4" ] || [ "$1" = "8" ]
 then
@@ -65,7 +67,11 @@ errorLevel=''
 if [ "$1" == "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]|| [ "$1" = "3" ]
 then
 	echo All kinds of errors are enabled
-	errorLevel=$1'_MPI_NOPdcDrt_allErrors'
+	#errorLevel=$1'_MPI_allErrors'
+	#errorLevel=$1'_NOPdcDrt_allErrors'
+	#errorLevel=$1'_NOMPI_allErrors'
+	errorLevel=$1'_allErrors'
+	skipExecution=true
 fi
 
 ### Executables with arithmetic errors and control errors ######################
@@ -74,40 +80,44 @@ then
 	echo Arithmetic and control operations errors are enabled
 	mv config.py ./configAll.py
 	mv configAC.py ./config.py
-	errorLevel=$1'_MPI_NOPdcDrt_arithmetic_control'
+	#errorLevel=$1'_MPI_arithmetic_control'
+	#errorLevel=$1'_NOPdcDrt_arithmetic_control'
+	#errorLevel=$1'_NOMPI_arithmetic_control'
+	errorLevel=$1'_arithmetic_control'
 fi
 
 ### Executables with only arithmetic errors #####################################
 if [ "$1" == "8" ] || [ "$1" = "9" ] || [ "$1" = "10" ]|| [ "$1" = "11" ]
 then
-	echo Only arithmetic errors are enabled	
+	echo Only arithmetic errors are enabled
 	mv config.py ./configAll.py
 	mv configA.py ./config.py
-	errorLevel=$1'_MPI_NOPdcDrt_arithmetic'
+	#errorLevel=$1'_MPI_arithmetic'
+	#errorLevel=$1'_NOPdcDrt_arithmetic'
+	#errorLevel=$1'_NOMPI_arithmetic'
+	errorLevel=$1'_arithmetic'
 fi
 
-make cleanBinaries 
+make cleanBinaries
 # Make wang executable and its log
+# Moving HPCCG executables and logfiles to app-executer folder
 make clean && make Wang && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin
-mv ddot.cpp.LLVM.txt log-$errorLevel-ddot-Wang.log
- 
+mv ddot.cpp.LLVM.txt ddot-$errorLevel-Wang.LLVM.txt
+cp Wang ../App-Executer-Clean/
+cp ddot-$errorLevel-Wang.LLVM.txt ../App-Executer-Clean/
+
 # Make wang var grouping executable and its log
 make clean && make WangVG && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin
-mv ddot.cpp.LLVM.txt log-$errorLevel-ddot-WangVG.log
+mv ddot.cpp.LLVM.txt ddot-$errorLevel-WangVG.LLVM.txt
+cp WangVG ../App-Executer-Clean/
+cp ddot-$errorLevel-WangVG.LLVM.txt ../App-Executer-Clean/
 
 # Make wang just volatiles executable and its log
 make clean && make WangJV && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin
-mv ddot.cpp.LLVM.txt log-$errorLevel-ddot-WangJV.log
+mv ddot.cpp.LLVM.txt ddot-$errorLevel-WangJV.LLVM.txt
+cp WangJV ../App-Executer-Clean/
+cp ddot-$errorLevel-WangJV.LLVM.txt ../App-Executer-Clean/
 
-# Moving HPCCG executables and logfiles to app-executer folder
-cp Wang ../App-Executer-Clean/Wang
-cp log-$errorLevel-ddot-Wang.log ../App-Executer-Clean/log-$errorLevel-ddot-Wang.log
-
-cp WangVG ../App-Executer-Clean/WangVG
-cp log-$errorLevel-ddot-WangVG.log ../App-Executer-Clean/log-$errorLevel-ddot-WangVG.log
-
-cp WangJV ../App-Executer-Clean/WangJV
-cp log-$errorLevel-ddot-WangJV.log ../App-Executer-Clean/log-$errorLevel-ddot-WangJV.log
 
 # Make app executable and all subfolders
 echo Making app executable and all subfolders
@@ -121,79 +131,81 @@ myPass="Password2018..."
 #########################################
 if [ "$1" == "0" ] || [ "$1" = "4" ] || [ "$1" = "8" ]
 then
-	mkdir runNotReplicated
-	cp Wang runNotReplicated/
-	cp app-executer runNotReplicated/
+	if [ "$skipExecution" = false ] ; then
+		mkdir output
+		cp Wang output/
+		cp ddot-$errorLevel-Wang.LLVM.txt output/ddot-$errorLevel-notReplicated.LLVM.txt
+		cp app-executer output/
 
-	# Run not replicated version and copy output to frondend
-	echo Running not replicated exe
-	cd runNotReplicated/
-	./app-executer ../Settings/settings_NotReplicated.ini > finalOutput.log
-	cd ..
-	folderName=$errorLevel'runNotReplicated.tar.gz'
-	tar -czvf $folderName runNotReplicated/
-	sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
-fi    
+		# Run not replicated version and copy output to frondend
+		echo Running not replicated exe
+		cd output/
+		./app-executer ../Settings/settings_NotReplicated.ini > finalOutput.txt
+		cd ..
+		folderName=$errorLevel'_runNotReplicated.tar.gz'
+		tar -czvf $folderName output/
+		sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
+	fi
+fi
 
 #########################################
 if [ "$1" == "1" ] || [ "$1" = "5" ] || [ "$1" = "9" ]
 then
-	mkdir runWang
-	cp Wang runWang/
-	cp log-$errorLevel-ddot-Wang.log runWang/
-	cp log-$errorLevel-ddot-WangVG.log runWang/
-	cp log-$errorLevel-ddot-WangJV.log runWang/
-	cp app-executer runWang/
+	if [ "$skipExecution" = false ] ; then
+		mkdir output
+		cp Wang output/
+		cp ddot-$errorLevel-Wang.LLVM.txt output/
+		cp app-executer output/
 
-	# Run Wang approach, and copy output to frontend
-	echo Running wang approach 
-	cd runWang/
-	./app-executer ../Settings/settings_Wang.ini > finalOutput.log
-	cd ..
-	folderName=$errorLevel'runWang.tar.gz'
-	tar -czvf $folderName runWang/
-	sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
-fi    
+		# Run Wang approach, and copy output to frontend
+		echo Running wang approach
+		cd output/
+		./app-executer ../Settings/settings_Wang.ini > finalOutput.txt
+		cd ..
+		folderName=$errorLevel'_runWang.tar.gz'
+		tar -czvf $folderName output/
+		sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
+	fi
+fi
 
 #########################################
 if [ "$1" == "2" ] || [ "$1" = "6" ] || [ "$1" = "10" ]
 then
-	mkdir runWangVG
-	cp WangVG runWangVG/
-	cp log-$errorLevel-ddot-Wang.log runWangVG/
-	cp log-$errorLevel-ddot-WangVG.log runWangVG/
-	cp log-$errorLevel-ddot-WangJV.log runWangVG/
-	cp app-executer runWangVG/
+	if [ "$skipExecution" = false ] ; then
+		mkdir output
+		cp WangVG output/
+		cp ddot-$errorLevel-WangVG.LLVM.txt output/
+		cp app-executer output/
+		# Run Wang Var Grouping approach, and copy output to frontend
 
-	# Run Wang Var Grouping approach, and copy output to frontend
-	echo Running wang approach with var grouping 
-	cd runWangVG/
-	./app-executer ../Settings/settings_Wang_VG.ini > finalOutput.log
-	cd ..
-	folderName=$errorLevel'runWangVG.tar.gz'
-	tar -czvf $folderName runWangVG/
-	sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
-fi    
+		echo Running wang approach with var grouping
+		cd output/
+		./app-executer ../Settings/settings_Wang_VG.ini > finalOutput.txt
+		cd ..
+		folderName=$errorLevel'_runWangVG.tar.gz'
+		tar -czvf $folderName output/
+		sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
+	fi
+fi
 
 #########################################
 if [ "$1" == "3" ] || [ "$1" = "7" ] || [ "$1" = "11" ]
 then
-	mkdir runWangJV
-	cp WangJV runWangJV/
-	cp log-$errorLevel-ddot-Wang.log runWangJV/
-	cp log-$errorLevel-ddot-WangVG.log runWangJV/
-	cp log-$errorLevel-ddot-WangJV.log runWangJV/
-	cp app-executer runWangJV/
+	if [ "$skipExecution" = false ] ; then
+		mkdir output
+		cp WangJV output/
+		cp ddot-$errorLevel-WangJV.LLVM.txt output/
+		cp app-executer output/
 
-	# Run Wang Just Volatiles approach, and copy output to frontend
-	echo Running wang approach with just volatiles
-	cd runWangJV/
-	./app-executer ../Settings/settings_Wang_JV.ini > finalOutput.log
-	cd ..
-	folderName=$errorLevel'runWangJV.tar.gz'
-	tar -czvf $folderName runWangJV/
-	sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
-fi    
+		# Run Wang Just Volatiles approach, and copy output to frontend
+		echo Running wang approach with just volatiles
+		cd output/
+		./app-executer ../Settings/settings_Wang_JV.ini > finalOutput.txt
+		cd ..
+		folderName=$errorLevel'_runWangJV.tar.gz'
+		tar -czvf $folderName output/
+		sshpass -p $myPass scp $folderName dperez@frontend:/home/dperez/public/workspace/
+	fi
+fi
 
 exit
-
