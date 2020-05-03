@@ -101,28 +101,28 @@ fi
 make cleanBinaries
 # Make wang executable and its log
 # Moving HPCCG executables and logfiles to app-executer folder
-make clean && make Wang && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin && ../FlipIt-master/scripts/binary2ascii.py RHT.cpp.LLVM.bin
+make clean && make Wang && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin #&& ../FlipIt-master/scripts/binary2ascii.py RHT.cpp.LLVM.bin
 mv ddot.cpp.LLVM.txt ddot-$errorLevel-Wang.LLVM.txt
-mv RHT.cpp.LLVM.txt RHT-$errorLevel-Wang.LLVM.txt
+#mv RHT.cpp.LLVM.txt RHT-$errorLevel-Wang.LLVM.txt
 cp Wang ../App-Executer-Clean/
 cp ddot-$errorLevel-Wang.LLVM.txt ../App-Executer-Clean/
-cp RHT-$errorLevel-Wang.LLVM.txt ../App-Executer-Clean/
+#cp RHT-$errorLevel-Wang.LLVM.txt ../App-Executer-Clean/
 
 # Make wang var grouping executable and its log
-make clean && make WangVG && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin && ../FlipIt-master/scripts/binary2ascii.py RHT.cpp.LLVM.bin
+make clean && make WangVG && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin #&& ../FlipIt-master/scripts/binary2ascii.py RHT.cpp.LLVM.bin
 mv ddot.cpp.LLVM.txt ddot-$errorLevel-WangVG.LLVM.txt
-mv RHT.cpp.LLVM.txt RHT-$errorLevel-WangVG.LLVM.txt
+#mv RHT.cpp.LLVM.txt RHT-$errorLevel-WangVG.LLVM.txt
 cp WangVG ../App-Executer-Clean/
 cp ddot-$errorLevel-WangVG.LLVM.txt ../App-Executer-Clean/
-cp RHT-$errorLevel-WangVG.LLVM.txt ../App-Executer-Clean/
+#cp RHT-$errorLevel-WangVG.LLVM.txt ../App-Executer-Clean/
 
 # Make wang just volatiles executable and its log
-make clean && make WangJV && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin && ../FlipIt-master/scripts/binary2ascii.py RHT.cpp.LLVM.bin
+make clean && make WangJV && ../FlipIt-master/scripts/binary2ascii.py ddot.cpp.LLVM.bin #&& ../FlipIt-master/scripts/binary2ascii.py RHT.cpp.LLVM.bin
 mv ddot.cpp.LLVM.txt ddot-$errorLevel-WangJV.LLVM.txt
-mv RHT.cpp.LLVM.txt RHT-$errorLevel-WangJV.LLVM.txt
+#mv RHT.cpp.LLVM.txt RHT-$errorLevel-WangJV.LLVM.txt
 cp WangJV ../App-Executer-Clean/
 cp ddot-$errorLevel-WangJV.LLVM.txt ../App-Executer-Clean/
-cp RHT-$errorLevel-WangJV.LLVM.txt ../App-Executer-Clean/
+#cp RHT-$errorLevel-WangJV.LLVM.txt ../App-Executer-Clean/
 
 
 # Make app executable and all subfolders
@@ -141,7 +141,7 @@ then
 		mkdir output
 		cp Wang output/
 		cp ddot-$errorLevel-Wang.LLVM.txt output/ddot-$errorLevel-notReplicated.LLVM.txt
-		cp RHT-$errorLevel-Wang.LLVM.txt output/RHT-$errorLevel-notReplicated.LLVM.txt
+		#cp RHT-$errorLevel-Wang.LLVM.txt output/RHT-$errorLevel-notReplicated.LLVM.txt
 		cp app-executer output/
 
 		# Run not replicated version and copy output to frondend
@@ -162,7 +162,7 @@ then
 		mkdir output
 		cp Wang output/
 		cp ddot-$errorLevel-Wang.LLVM.txt output/
-		cp RHT-$errorLevel-Wang.LLVM.txt output/
+		#cp RHT-$errorLevel-Wang.LLVM.txt output/
 		cp app-executer output/
 
 		# Run Wang approach, and copy output to frontend
@@ -183,7 +183,7 @@ then
 		mkdir output
 		cp WangVG output/
 		cp ddot-$errorLevel-WangVG.LLVM.txt output/
-		cp RHT-$errorLevel-WangVG.LLVM.txt output/
+		#cp RHT-$errorLevel-WangVG.LLVM.txt output/
 		cp app-executer output/
 		# Run Wang Var Grouping approach, and copy output to frontend
 
@@ -204,7 +204,7 @@ then
 		mkdir output
 		cp WangJV output/
 		cp ddot-$errorLevel-WangJV.LLVM.txt output/
-		cp RHT-$errorLevel-WangJV.LLVM.txt output/
+		#cp RHT-$errorLevel-WangJV.LLVM.txt output/
 		cp app-executer output/
 
 		# Run Wang Just Volatiles approach, and copy output to frontend
