@@ -12,14 +12,22 @@
 #myCluster='chiclet' #lille
 myCluster='ecotype' #nantes
 #myCluster='grisou' #nancy
-numNodes=12
-#oardel 168442 #to delete a job
+numNodes=8
+
 #oarsub -I -t deploy -l {"cluster='$myCluster'"}/nodes=1,walltime=1
 #oarsub -I -l {"cluster='suno'"}/nodes=1,walltime=1
-#oarsub -r "2019-08-05 19:00:00" -t deploy -l {"cluster='$myCluster'"}/nodes=$numNodes,walltime=12:00
 
-#oarwalltime 168460 +0:30 
-#oarsub -C 168460
+# Request numNodes-nodes at the myClusters cluster 
+#oarsub -r "2020-06-05 19:00:00" -t deploy -l {"cluster='$myCluster'"}/nodes=$numNodes,walltime=24:00
+
+# Extend time on a job
+#oarwalltime 199549 +0:30 
+
+# Connect to job
+#oarsub -C 199549
+
+#Delete a job
+#oardel 199549
 
 #Deploy my image to all your nodes (as root)
 echo Deploying image to all nodes
@@ -30,7 +38,8 @@ mapfile -t myNodes < <( cat $OAR_FILE_NODES )
 
 echo Copying everything and executing scripts
 var=$((${#myNodes[@]} / $numNodes))
-param=0
+# starts at 4 because we are no longer running all errors executions
+param=4 
 for i in ${!myNodes[@]}; do
   index=$(($i%$var))
   if [ $index -eq 0 ]; then
@@ -53,25 +62,10 @@ echo Done ordering script execution
 exit
 
 # These are just helpful commands to have, but they are not executed because of the recent "exit" command
-# Renaming everything to proper folder names
-mv runNotReplicated_allErrors.tar.gz 0-runNotReplicated_allErrors.tar.gz 
-mv runNotReplicated_arithmetic_control.tar.gz 1-runNotReplicated_arithmetic_control.tar.gz
-mv runNotReplicated_arithmetic.tar.gz 2-runNotReplicated_arithmetic.tar.gz 
-
-mv runWang_allErrors.tar.gz 3-runWang_allErrors.tar.gz
-mv runWang_arithmetic_control.tar.gz 4-runWang_arithmetic_control.tar.gz
-mv runWang_arithmetic.tar.gz 5-runWang_arithmetic.tar.gz
-
-mv runWangVG_allErrors.tar.gz 6-runWangVG_allErrors.tar.gz
-mv runWangVG_arithmetic_control.tar.gz 7-runWangVG_arithmetic_control.tar.gz
-mv runWangVG_arithmetic.tar.gz 8-runWangVG_arithmetic.tar.gz
-
-mv runWangJV_allErrors.tar.gz 9-runWangJV_allErrors.tar.gz
-mv runWangJV_arithmetic_control.tar.gz 10-runWangJV_arithmetic_control.tar.gz
-mv runWangJV_arithmetic.tar.gz 11-runWangJV_arithmetic.tar.gz
-
 # Compressing into a single tar.gz
-tar -czvf reliability-results.tar.gz *-run*.tar.gz
+currentDate=$(date +%A%d%B)
+tar -czvf $currentDate'_reliability-results.tar.gz' *_run*.tar.gz
+
 
 # Executed from my machine
 #scp dperez@access.grid5000.fr:nantes/public/workspace/reliability-results.tar.gz ./
