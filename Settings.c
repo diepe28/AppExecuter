@@ -4,7 +4,9 @@ const char* OUTPUT_FILE_STR = "Output";
 char APP_GOT_HUNG_STR[]= "Application got stuck!";
 char APP_GOT_CORRUPTED_STR[]= "Corrupted execution!";
 const char* INPUT_FILE_STR = "Settings/settings.ini";
-const char* SETTING_COMMAND = "Command";
+const char* SETTING_EXE_NAME = "ExeName";
+const char* SETTING_ARGUMENTS ="Arguments";
+const char* COMMAND_START = "mpiexec -np 1 ./";
 const char* SETTING_NUM_RUNS = "NumRuns";
 const char* SETTING_NUM_ITERS = "NumIters";
 const char* SETTING_TIMEOUT = "TimeOut";
@@ -16,9 +18,11 @@ const char* SOFT_ERROR_STR = "SOFT ERROR DETECTED";
 int commandStates[NUM_STATES];
 
 // Other methods
-Settings * readSettings(char * settingsFile){
+Settings* readSettings(char * settingsFile){
+
 	Settings* mySettings = malloc(sizeof(Settings));
-	mySettings->command = (char*) malloc(sizeof(char) * 2048);
+	mySettings->exeName = (char*) malloc(sizeof(char) * 100);
+	mySettings->arguments = (char*) malloc(sizeof(char) * 1024);
 	mySettings->correctOutput = (char*) malloc(sizeof(char) * 128);
 
 	int i;
@@ -36,32 +40,38 @@ Settings * readSettings(char * settingsFile){
 
 	// Parsing file to setting enum
 	while ((lineLength = getline(&line, &len, inputFile)) != -1) {
+		// pointer to first occurence of '='
 		char *ptr = strchr(line, '=');
 		if(ptr) {
-   		int index = ptr - line;
-			int valueLength =  lineLength-(index+1);
+   		int nameLength = ptr - line;
+			int valueLength =  lineLength-(nameLength+1);
 
 			// parsing the line to name,value
-  		char* settingName = (char*) malloc(sizeof(char) * index);
+  		char* settingName = (char*) malloc(sizeof(char) * nameLength);
 			char* settingValue = (char*) malloc(sizeof(char) * valueLength-1);
-			memcpy(settingName, line, index);
+			memcpy(settingName, line, nameLength);
+			settingName[nameLength] = '\0';
 			memcpy(settingValue, ptr+1, valueLength-2); // -1 to avoid the ';' and the end of line
+			settingValue[valueLength-2] = '\0';
 
 			// 'switch' of settings
-			if (strcmp(settingName, SETTING_COMMAND) == 0) {
-			  strcpy(mySettings->command, settingValue);
+			if (strcmp(settingName, SETTING_EXE_NAME) == 0) {
+			  strcpy(mySettings->exeName, settingValue);
 			}
-			else if (strcmp(settingName, SETTING_CORRECT_RESULT) == 0) {
-				strcpy(mySettings->correctOutput, settingValue);
-			}
-			else if (strcmp(settingName, SETTING_TIMEOUT) == 0) {
-				mySettings->timeoutSeconds = strtol(settingValue, NULL, 10);
+			else if (strcmp(settingName, SETTING_ARGUMENTS) == 0) {
+			  strcpy(mySettings->arguments, settingValue);
 			}
 			else if (strcmp(settingName, SETTING_NUM_RUNS) == 0) {
 				mySettings->numRuns = strtol(settingValue, NULL, 10);
 			}
+			else if (strcmp(settingName, SETTING_TIMEOUT) == 0) {
+				mySettings->timeoutSeconds = strtol(settingValue, NULL, 10);
+			}
 			else if (strcmp(settingName, SETTING_NUM_ITERS) == 0) {
 				mySettings->numIters = strtol(settingValue, NULL, 10);
+			}
+			else if (strcmp(settingName, SETTING_CORRECT_RESULT) == 0) {
+				strcpy(mySettings->correctOutput, settingValue);
 			}
 
 			free(settingName);
@@ -89,7 +99,7 @@ void executeSettings(Settings* this){
 		char output_log[64];
 	  snprintf(output_log, 64, "%s_%d.txt", OUTPUT_FILE_STR, i);
 
-    if(step1_executeCommand(this->command, output_log, this->timeoutSeconds)){
+    if(step1_executeCommand(i, this->exeName, this->arguments, output_log, this->timeoutSeconds)){
 			currentState = step2_classifyOutput(
 				output_log, this->correctOutput, this->numIters);
 		}else{
@@ -113,17 +123,19 @@ void executeSettings(Settings* this){
 }
 
 void freeSettings(Settings * this){
-	free(this->command);
+	free(this->exeName);
+	free(this->arguments);
 	free(this->correctOutput);
 	free(this);
 }
 
 // Returns 1 if the command was not killed by the timeout
-int step1_executeCommand(char * command, char * output_log, int timeoutSeconds){
+int step1_executeCommand(int executionCount, char * exeName, char* arguments, char * output_log, int timeoutSeconds){
 	// Appending "> output.txt" to command
 	static char new_buffer[2048];
-  snprintf(new_buffer, 2048, "timeout %ds %s > %s",
-	 timeoutSeconds, command, output_log);
+  //snprintf(new_buffer, 2048, "timeout %ds %s > %s",
+	snprintf(new_buffer, 2048, "timeout %ds mpiexec -np 1 ./%s %d %s > %s",
+	 timeoutSeconds, exeName, executionCount, arguments, output_log);
   printf("Executing command: %s\n", new_buffer);
   int status = system(new_buffer);
 	printf("Status of command: %d\n", status);
@@ -235,8 +247,9 @@ State step2_classifyOutput(char * outputLog, char * correctOutput, int correctNu
 			// move the char * after ':', to get the current output
 			subStr = finalLine + indexOf + resultStrLength;
 			valueLength = strlen(subStr) -1;
-			currentOutput = (char*) malloc(sizeof(char) * valueLength);
+			currentOutput = (char*) malloc(sizeof(char) * valueLength +1);
 			memcpy(currentOutput, subStr, valueLength);
+			currentOutput[valueLength] = '\0'; //appending end of string
 			currentIters = strtol(currentOutput, NULL, 10);
 			printf("Current num iters: %d\n", currentIters);
 			free(currentOutput);
@@ -254,7 +267,8 @@ State step2_classifyOutput(char * outputLog, char * correctOutput, int correctNu
 			// move the char * after ':', to get the current output
 			subStr = finalLine + indexOf + resultStrLength;
 			valueLength = strlen(subStr) -1;
-			currentOutput = (char*) malloc(sizeof(char) * valueLength);
+			currentOutput = (char*) malloc(sizeof(char) * valueLength +1);
+			currentOutput[valueLength] = '\0'; //appending end of string
 			memcpy(currentOutput, subStr, valueLength);
 
 			if (strcmp(currentOutput, correctOutput) == 0){
@@ -297,11 +311,12 @@ State step2_classifyOutput(char * outputLog, char * correctOutput, int correctNu
 
 void printSettings(Settings * this){
 	printf("Current Settings:\n");
-	printf("  %s: %s\n", SETTING_COMMAND, this->command);
-	printf("  %s: %s\n", SETTING_CORRECT_RESULT, this->correctOutput);
-	printf("  %s: %d\n", SETTING_NUM_ITERS, this->numIters);
-	printf("  %s: %d\n", SETTING_TIMEOUT, this->timeoutSeconds);
+	printf("  %s: %s\n", SETTING_EXE_NAME, this->exeName);
+	printf("  %s: %s\n", SETTING_ARGUMENTS, this->arguments);
 	printf("  %s: %d\n", SETTING_NUM_RUNS, this->numRuns);
+	printf("  %s: %d\n", SETTING_TIMEOUT, this->timeoutSeconds);
+	printf("  %s: %d\n", SETTING_NUM_ITERS, this->numIters);
+	printf("  %s: %s\n", SETTING_CORRECT_RESULT, this->correctOutput);
 	printf("\n");
 }
 

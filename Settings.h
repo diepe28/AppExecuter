@@ -11,7 +11,8 @@
 
 // Types definition
 typedef struct {
-    char* command;
+    char* exeName;
+    char* arguments;
 		char* correctOutput;
     int numRuns;
     int numIters;
@@ -42,7 +43,9 @@ extern char APP_GOT_HUNG_STR[];
 extern char APP_GOT_CORRUPTED_STR[];
 extern const char* INPUT_FILE_STR;
 extern const char* RESULT_STR;
-extern const char* SETTING_COMMAND;
+extern const char* SETTING_EXE_NAME;
+extern const char* SETTING_ARGUMENTS;
+extern const char* COMMAND_START;
 extern const char* SETTING_NUM_RUNS;
 extern const char* SETTING_TIMEOUT;
 extern const char* SETTING_CORRECT_RESULT;
@@ -56,7 +59,7 @@ void printResults(int);
 void executeSettings(Settings*);
 int str_indexOf(char *, char*);
 
-int step1_executeCommand(char *, char *, int);
+int step1_executeCommand(int, char*, char*, char*, int);
 int wasSoftErrorDetected(char *);
 State reclassifyOutput(State, int);
 State step2_classifyOutput(char *, char *, int);
